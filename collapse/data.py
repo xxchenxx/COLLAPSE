@@ -24,6 +24,7 @@ import torch_cluster
 from collections.abc import Mapping, Sequence
 from collapse.byol_pytorch import BYOL
 from collapse.models import CDDModel
+import urllib
 
 import pathlib
 
@@ -806,7 +807,9 @@ class SiteDataset(IterableDataset):
     '''
     
     def __init__(self, dataset, pdb_dir, train_mode=True, env_radius=10.0, device='cpu'):
-        self.dataset = pd.read_csv(dataset, converters={'locs': lambda x: eval(x)})
+        print(dataset)
+        # self.dataset = pd.read_csv(dataset, converters={'locs': lambda x: eval(x)})
+        self.dataset = dataset
         self.pdb_dir = pdb_dir
         self.env_radius = env_radius
         self.device = device
@@ -816,10 +819,10 @@ class SiteDataset(IterableDataset):
         for pdb_chain, df in self.dataset.groupby('pdb'):
             pdb = pdb_chain[:4]
             chain = pdb_chain[4:]
-            fp = os.path.join(self.pdb_dir, pdb + '.pdb.gz')
+            fp = os.path.join(self.pdb_dir, pdb + '.pdb')
             if not os.path.exists(fp):
-                print('skipping PDB', pdb)
-                continue
+                urllib.request.urlretrieve(f'http://files.rcsb.org/download/{pdb}.pdb', fp)
+                print(fp)
             atom_df = process_pdb(fp, chain=chain)
             kd_tree = scipy.spatial.cKDTree(atom_df[['x', 'y', 'z']].to_numpy())
 
